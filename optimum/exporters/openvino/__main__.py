@@ -496,6 +496,9 @@ def main_export(
                 **loading_kwargs,
             )
 
+        if getattr(model, "dtype", None) in [torch.float16, torch.bfloat16]:
+            patch_16bit = True
+
         needs_pad_token_id = task == "text-classification" and getattr(model.config, "pad_token_id", None) is None
 
         if needs_pad_token_id:
@@ -636,6 +639,23 @@ def _main_quantize(
             cache_dir=cache_dir,
             token=token,
         )
+
+    # NOTE: The Phi-4-multimodal-instruct model card contains a pipeline_tag set to automatic-speech-recognition,
+    # which is returned as the inferred task. As a result, we try to load the exported model using the
+    # OVModelForSpeechSeq2Seq class instead of the OVModelForVisualCausalLM class when the task is not specified
+    # explicitly. Because of this, we get an error.
+    if original_task == "auto" and library_name == "transformers":
+        config = AutoConfig.from_pretrained(
+            model_name_or_path,
+            subfolder=subfolder,
+            revision=revision,
+            cache_dir=cache_dir,
+            token=token,
+            trust_remote_code=trust_remote_code,
+        )
+        model_type = config.model_type
+        if model_type in ["phi4mm", "phi4_multimodal"]:
+            task = "image-text-to-text"
 
     # Step 1. Obtain the correct OpenVINO model class
     if library_name == "diffusers":

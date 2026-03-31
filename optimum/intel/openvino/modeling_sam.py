@@ -184,7 +184,7 @@ class OVSamModel(OVBaseModel):
                 The vision encoder model file name. Overwrites the default file name openvino_vision_encoder.xml and allows one to
                 load the vision encoder model with a different name.
             prompt_encoder_mask_decoder_file_name(`str`, *optional*):
-                The prompt encdoer and mask decoder model file name overwriting the default file name
+                The prompt encoder and mask decoder model file name overwriting the default file name
                 openvino_prompt_encoder_mask_decoder.xml, allowing to load the decoder model with a different name.
             local_files_only(`bool`, *optional*, defaults to `False`):
                 Whether or not to only look at local files (i.e., do not try to download the model).
@@ -403,7 +403,7 @@ class OVSamModel(OVBaseModel):
         x_embed = x_embed / size
 
         positional_embedding = self.shared_image_embedding(torch.stack([x_embed, y_embed], dim=-1))
-        return positional_embedding.permute(2, 0, 1).unsqueeze(0)
+        return positional_embedding.permute(2, 0, 1).unsqueeze(0).detach()
 
     def get_image_features(self, pixel_values, *args, **kwargs):
         return torch.from_numpy(self.vision_encoder(pixel_values).image_embeddings)

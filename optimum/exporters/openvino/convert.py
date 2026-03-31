@@ -435,11 +435,16 @@ def export_pytorch(
 
                     __make_16bit_traceable(model)
 
+                conversion_extensions = getattr(patcher, "conversion_extensions", None)
+                module_extensions = getattr(patcher, "module_extensions", None)
+                if module_extensions is not None:
+                    ts_decoder_kwargs["module_extensions"] = module_extensions
                 ts_decoder = TorchScriptPythonDecoder(model, example_input=dummy_inputs, **ts_decoder_kwargs)
                 ov_model = convert_model(
                     ts_decoder,
                     example_input=dummy_inputs,
                     input=[(item.shape, item.type) for item in input_info],
+                    extension=conversion_extensions,
                 )
 
         ov_model.validate_nodes_and_infer_types()  # TODO: remove as unnecessary validation?
@@ -682,10 +687,6 @@ def export_from_model(
         )
         logging.disable(logging.NOTSET)
 
-    # Remove empty model and export_configs pairs, they can be empty when a config class is shared between model versions.
-    # Example: Qwen2VL and Qwen3VL share config class, but "vision_embeddings_pos" is used in Qwen3VL only.
-    models_and_export_configs = {k: v for k, v in models_and_export_configs.items() if v != (None, None)}
-
     if library_name == "open_clip":
         if hasattr(model.config, "save_pretrained"):
             model.config.save_pretrained(output)
@@ -696,20 +697,21 @@ def export_from_model(
 
         files_subpaths = ["openvino_" + model_name + ".xml" for model_name in models_and_export_configs.keys()]
     elif library_name != "diffusers":
-        # some model configs may have issues with loading without parameters initialization
-        try:
-            misplaced_generation_parameters = model.config._get_non_default_generation_parameters()
-        except (AttributeError, KeyError, TypeError):
-            misplaced_generation_parameters = {}
-        if isinstance(model, GenerationMixin) and len(misplaced_generation_parameters) > 0:
-            logger.warning(
-                "Moving the following attributes in the config to the generation config: "
-                f"{misplaced_generation_parameters}. You are seeing this warning because you've set "
-                "generation parameters in the model config, as opposed to in the generation config.",
-            )
-            for param_name, param_value in misplaced_generation_parameters.items():
-                setattr(model.generation_config, param_name, param_value)
-                setattr(model.config, param_name, None)
+        if is_transformers_version("<", "5"):
+            # some model configs may have issues with loading without parameters initialization
+            try:
+                misplaced_generation_parameters = model.config._get_non_default_generation_parameters()
+            except (AttributeError, KeyError, TypeError):
+                misplaced_generation_parameters = {}
+            if isinstance(model, GenerationMixin) and len(misplaced_generation_parameters) > 0:
+                logger.warning(
+                    "Moving the following attributes in the config to the generation config: "
+                    f"{misplaced_generation_parameters}. You are seeing this warning because you've set "
+                    "generation parameters in the model config, as opposed to in the generation config.",
+                )
+                for param_name, param_value in misplaced_generation_parameters.items():
+                    setattr(model.generation_config, param_name, param_value)
+                    setattr(model.config, param_name, None)
 
         # Saving the model config and preprocessor as this is needed sometimes.
         save_config(model.config, output)
