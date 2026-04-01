@@ -139,6 +139,7 @@ from .model_patcher import (
     BlenderbotSmallModelPatcher,
     BloomModelPatcher,
     ChatGLMModelPatcher,
+    Glm4MoeLitePatcher,
     CodeGenModelPatcher,
     CommonImageEmbeddingsModelPatcher,
     DBRXModelPatcher,
@@ -3974,6 +3975,23 @@ class GLMOpenVINOConfig(LlamaOpenVINOConfig):
 )
 class GLM4OpenVINOConfig(LlamaOpenVINOConfig):
     MIN_TRANSFORMERS_VERSION = "4.51.3"
+
+
+@register_in_tasks_manager(
+    "glm4_moe_lite",
+    *[
+        "text-generation",
+        "text-generation-with-past",
+    ],
+    library_name="transformers",
+)
+class Glm4MoeLiteOpenVINOConfig(TextDecoderWithPositionIdsOnnxConfig):
+    DEFAULT_ONNX_OPSET = 14
+    MIN_TRANSFORMERS_VERSION = "5.0.0"
+    DUMMY_INPUT_GENERATOR_CLASSES = (DummyTextInputGenerator, OVMiniCPM3DummyPastKeyValuesGenerator)
+    DUMMY_PKV_GENERATOR_CLASS = OVMiniCPM3DummyPastKeyValuesGenerator
+    NORMALIZED_CONFIG_CLASS = NormalizedTextConfig
+    _MODEL_PATCHER = Glm4MoeLitePatcher
 
 
 @register_in_tasks_manager(

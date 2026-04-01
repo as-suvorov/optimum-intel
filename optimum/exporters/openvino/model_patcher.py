@@ -7744,6 +7744,18 @@ class AfmoeModelPatcher(OVDecoderModelPatcher):
                 del afmoe_moe.down_projs, afmoe_moe.gate_projs, afmoe_moe.up_projs
 
 
+# Patch MoE implementation for glm4_moe_lite to enable correct Torch tracing.
+# The default "eager" experts implementation in Glm4MoeLiteNaiveMoe.forward() uses
+# torch.no_grad(), nonzero(), and a data-dependent loop over experts, producing
+# inconsistent graphs for different inputs during torch.jit.trace.
+# The transformers built-in "batched_mm" implementation uses index-based operations
+# and batched matrix multiplications that are fully trace-safe.
+class Glm4MoeLitePatcher(OVDecoderModelPatcher):
+    def __enter__(self):
+        super().__enter__()
+        self._model.set_experts_implementation("batched_mm")
+
+
 # adopted from https://github.com/huggingface/transformers/blob/v4.57.6/src/transformers/models/llama/modeling_llama.py#L197
 class LlamaEagle3Attention(LlamaAttention):
     """
