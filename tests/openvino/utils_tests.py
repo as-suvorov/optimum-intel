@@ -218,6 +218,7 @@ MODEL_NAMES = {
     "xglm": "optimum-intel-internal-testing/tiny-random-XGLMForCausalLM",
     "xverse": "optimum-intel-internal-testing/tiny-random-xverse",
     "glm4": "optimum-intel-internal-testing/tiny-random-glm4",
+    "glm4_moe_lite": "zai-org/GLM-4.7-Flash",
     "glm": "optimum-intel-internal-testing/tiny-random-glm-edge",
     "open-clip": "optimum-intel-internal-testing/tiny-open-clip-model",
     "open-clip-ov": "optimum-intel-internal-testing/tiny-open-clip-model",
@@ -372,6 +373,7 @@ _ARCHITECTURES_TO_EXPECTED_INT8 = {
     "hunyuan_v1_dense": {"model": 32},
     "qwen3_eagle3": {"model": 20},
     "qwen3_next": {"model": 100},
+    "glm4_moe_lite": {"model": 16},
 }
 
 TEST_IMAGE_URL = "http://images.cocodataset.org/val2017/000000039769.jpg"
