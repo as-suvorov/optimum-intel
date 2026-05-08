@@ -1828,10 +1828,10 @@ class LMInputEmbedsConfigHelper(TextDecoderWithPositionIdsOnnxConfig):
                 0
             ].random_int_tensor(token_type_ids_shape, min_value=0, max_value=2)
         if "per_layer_inputs" in self.inputs:
-            per_layer_inputs_shape = (input_ids.shape[0], input_ids.shape[1], 30, 256)
-            dummy_inputs["per_layer_inputs"] = self.orig_export_config.DUMMY_INPUT_GENERATOR_CLASSES[
-                0
-            ].random_int_tensor(per_layer_inputs_shape, min_value=0, max_value=2)
+            num_hidden_layers = self._config.num_hidden_layers
+            hidden_size_per_layer_input = getattr(self._config, "hidden_size_per_layer_input", 256)
+            per_layer_inputs_shape = (input_ids.shape[0], input_ids.shape[1], num_hidden_layers, hidden_size_per_layer_input)
+            dummy_inputs["per_layer_inputs"] = self.orig_export_config.DUMMY_INPUT_GENERATOR_CLASSES[0].random_float_tensor(per_layer_inputs_shape)
         return dummy_inputs
 
 
